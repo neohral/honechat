@@ -102,7 +102,9 @@ let updateStorage = (room, id, obj) => {
   getStorage(room, id) = obj;
   sendStorage("update", room, id, obj);
 };
-
+/**
+ * userManager
+ */
 let id = 0;
 let users = [];
 //接続時
@@ -189,6 +191,8 @@ let updateUser = (type, room, user) => {
  */
 let loginUser = (user) => {
   //loginUserに対して
+  user.isHost = false;
+  user.vote = false;
   let body = {
     user,
     users: getUserByRoom(user.room).filter(function (alluser, i) {
@@ -196,7 +200,6 @@ let loginUser = (user) => {
     }),
     storages: JSON.stringify(storages),
   };
-  console.log(JSON.stringify(storages));
   let welcome = new Message("server", user.room, "welcome", body);
   user.ws.send(JSON.stringify(welcome));
   if (getUserByRoom(user.room).length == 1) {

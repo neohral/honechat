@@ -25,7 +25,16 @@ ws.addEventListener("message", (event) => {
       );
       users = [];
       json.body.users.filter(function (user, i) {
-        users.push(new User(user.ws, user.id, user.name, user.room, user.key));
+        let pushUser = new User(
+          user.ws,
+          user.id,
+          user.name,
+          user.room,
+          user.key
+        );
+        pushUser.isHost = user.isHost;
+        pushUser.vote = user.vote;
+        users.push(pushUser);
       });
       document.getElementById("messages").innerHTML = "";
       break;
@@ -46,18 +55,24 @@ ws.addEventListener("message", (event) => {
           case "host":
             users.filter(function (hostuser, i) {
               if (hostuser.id === json.body.user.id) {
-                hostuser.host = true;
+                hostuser.isHost = true;
               }
             });
             if (user.id == json.body.user.id) {
-              user.host = true;
+              user.isHost = true;
             }
             addLog(json.body.type, json.body.user);
         }
       }
       document.getElementById("users").innerHTML = "";
       users.filter(function (user, i) {
-        document.getElementById("users").innerHTML += `<div>${user.name}</div>`;
+        let icon = "";
+        if (user.isHost) {
+          icon = "👑";
+        }
+        document.getElementById(
+          "users"
+        ).innerHTML += `<div>${user.name}${icon}</div>`;
       });
       break;
   }
