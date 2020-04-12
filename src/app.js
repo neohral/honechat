@@ -1,6 +1,13 @@
-import { user, receive } from "./userClient";
+import { user } from "./userClient";
 import { ws, Message } from "./websoket";
-
+import {
+  getStorage,
+  pushStorage,
+  removeStorage,
+  updateStorage,
+  storages,
+  storageEv,
+} from "./storage";
 let userKey = getUniqueStr();
 document.getElementById("name").value = userKey;
 /**
@@ -70,3 +77,18 @@ function getUniqueStr(myStrong) {
     Math.floor(strong * Math.random()).toString(16)
   );
 }
+storageEv.addEventListener(
+  "welcome",
+  (event) => {
+    console.log(event);
+    getStorage(user.room, "message").forEach(function (con, i) {
+      document.getElementById(
+        "messages"
+      ).innerHTML += `<div>${con.name}:${con.message}</div>`;
+    });
+    document.getElementById(
+      "messages"
+    ).innerHTML += `<div>------------過去ログ---------------</div>`;
+  },
+  false
+);

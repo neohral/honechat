@@ -45,6 +45,27 @@ class Storage {
     this.obj = obj;
   }
 }
+let storages = [];
+//receiveStrage
+wss.on("connection", function (ws) {
+  ws.on("message", function (message) {
+    let json = JSON.parse(message);
+    if (json.title == "updateStorage") {
+      let body = json.body;
+      switch (body.type) {
+        case "push":
+          pushStorage(body.room, body.id, body.obj);
+          break;
+        case "remove":
+          removeStorage(body.room, body.id, body.num);
+          break;
+        case "update":
+          updateStorage(body.room, body.id, body.obj);
+          break;
+      }
+    }
+  });
+});
 function getStorage(room, id) {
   let storage = null;
   storages.forEach(function (con, i) {
@@ -58,15 +79,30 @@ function getStorage(room, id) {
   }
   return storage.obj;
 }
-function pushStorage(room, id, obj) {
-  getStorage(room, id).obj.push(obj);
-}
-function removeStorage(room, id, num) {
-  getStorage(room, id).obj.splice(num, 1);
-}
-function updateStorage(room, id, obj) {
-  getStorage(room, id).obj = obj;
-}
+let sendStorage = (type, room, id, obj, num) => {
+  let body = {
+    room,
+    id,
+    obj,
+    num,
+  };
+  let mes = new Message("server", room, `updateStrage_${type}`, body);
+  broadcast(JSON.stringify(mes));
+};
+let pushStorage = (room, id, obj) => {
+  getStorage(room, id).push(obj);
+  sendStorage("push", room, id, obj);
+};
+let removeStorage = (room, id, num) => {
+  let delObj = getStorage(room, id).obj[num];
+  getStorage(room, id).splice(num, 1);
+  sendStorage("remove", room, id, delObj, num);
+};
+let updateStorage = (room, id, obj) => {
+  getStorage(room, id) = obj;
+  sendStorage("update", room, id, obj);
+};
+
 let id = 0;
 let users = [];
 //接続時
@@ -122,6 +158,10 @@ wss.on("connection", function (ws) {
           }
         }
         break;
+      case "message":
+        let body = { message: json.body.message, name: json.body.name };
+        pushStorage(jsonMes.room, "message", body);
+        break;
     }
     if (isAbleBroadcast) {
       broadcast(message, jsonMes.room);
@@ -140,7 +180,6 @@ let updateUser = (type, room, user) => {
     user,
   };
   let mes = new Message("server", user.room, "updateUser", body);
-  console.log(mes);
   broadcast(JSON.stringify(mes), room);
 };
 /**
@@ -155,7 +194,9 @@ let loginUser = (user) => {
     users: getUserByRoom(user.room).filter(function (alluser, i) {
       return alluser.ws === user.ws ? false : true;
     }),
+    storages: JSON.stringify(storages),
   };
+  console.log(JSON.stringify(storages));
   let welcome = new Message("server", user.room, "welcome", body);
   user.ws.send(JSON.stringify(welcome));
   if (getUserByRoom(user.room).length == 1) {
