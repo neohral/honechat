@@ -1,19 +1,22 @@
 <!DOCTYPE html>
 <html>
-  <head> </head>
+  <head>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+  </head>
   <body>
     <div id="users"></div>
     <strong>ws chat</strong><br />
     <div>
-      <input type="text" value="defalut" id="room" />
-      <input type="text" value="noname" id="name" />
+      <input type="text" value="nannkaRoom" id="room" placeholder="room" />
+      <input type="text" value="noname" id="name" placeholder="name" />
       <input type="button" id="joinBtn" value="join" />
     </div>
     <input type="text" id="msg" />
     <input type="button" id="sendBtn" value="send" />
+    <input type="button" id="voteBtn" value="ping" />
     <br />
     <hr />
-    <div id="messages"></div>
+    <div id="messages" class="example"></div>
     <script src="dist/app.js"></script>
   </body>
 </html>

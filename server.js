@@ -258,6 +258,84 @@ let getUserByRoom = (room) => {
   return result;
 };
 /**
+ * Vote
+ */
+let voteList = [];
+function voteStart(room) {
+  if (!getRoomVote(room).isVoting) {
+    let users = getUserByRoom(room);
+    users.forEach(function (con, i) {
+      con.vote = false;
+    });
+    getRoomVote(room).isVoting = true;
+    getRoomVote(room).users = users;
+    let mes = new Message("server", room, "voteStart", null);
+    broadcast(JSON.stringify(mes), room);
+  }
+}
+function voteCheck(room) {
+  let endVote = true;
+  let users = getRoomVote(room).users;
+  users.forEach(function (con, i) {
+    console.log(`[log]CHECK:${con.id}:${con.vote}`);
+    if (!con.vote) {
+      endVote = false;
+    }
+  });
+  return endVote;
+}
+function getRoomVote(roomname) {
+  let roomVote = null;
+  voteList.forEach((vote) => {
+    if (vote.room == roomname) {
+      roomVote = vote;
+    }
+  });
+  if (roomVote == null) {
+    roomVote = { room: roomname, isVoting: false };
+    voteList.push(roomVote);
+  }
+  return roomVote;
+}
+let timeoutObj;
+wss.on("connection", function (ws) {
+  ws.on("message", function (message) {
+    let json = JSON.parse(message);
+    switch (json.title) {
+      case "voteReq":
+        voteStart(json.room);
+        break;
+      case "voteDone":
+        getRoomVote(json.room).users.forEach((user) => {
+          if (user.id == json.sender) {
+            user.vote = true;
+          }
+        });
+        if (voteCheck(json.room)) {
+          voteEnd(json.room);
+        } else {
+          //次のDoneまでに5秒以上掛かったらend
+          clearTimeout(timeoutObj);
+          timeoutObj = setTimeout(() => {
+            voteEnd(json.room);
+          }, 5000);
+        }
+        break;
+    }
+  });
+});
+function voteEnd(room) {
+  console.log("end");
+  if (getRoomVote(room).isVoting) {
+    clearTimeout(timeoutObj);
+    let mes = new Message("server", room, "voteEnd", {
+      time: new Date().getTime(),
+    });
+    getRoomVote(room).isVoting = false;
+    broadcast(JSON.stringify(mes), room);
+  }
+}
+/**
  * 受信したメッセージを返す。
  * @param {string} message - json文字列
  * @param {string} room

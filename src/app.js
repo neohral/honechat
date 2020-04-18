@@ -9,10 +9,11 @@ import {
   storageEv,
 } from "./storage";
 let userKey = getUniqueStr();
-document.getElementById("name").value = userKey;
+//document.getElementById("name").value = userKey;
 /**
  * websoketのreceive部分
  */
+let rnd;
 ws.addEventListener("message", (event) => {
   let json = JSON.parse(event.data);
   console.log(json.title);
@@ -21,9 +22,30 @@ ws.addEventListener("message", (event) => {
       document.getElementById(
         "messages"
       ).innerHTML += `<div>${json.body.name}:${json.body.message}</div>`;
+      scroll();
+      break;
+    case "voteStart":
+      document.getElementById("messages").innerHTML += `<div>ping開始</div>`;
+      scroll();
+      rnd = Math.random() * 10000;
+      setTimeout(votedone, rnd);
+      break;
+    case "voteEnd":
+      document.getElementById("messages").innerHTML += `<div>ping終了</div>`;
+      scroll();
       break;
   }
 });
+let votedone = () => {
+  let body = {
+    message: `ping(嘘)：${rnd}`,
+    name: user.name,
+  };
+  let data = new Message(user.id, user.room, `message`, body);
+  ws.send(data.getJson());
+  let mes = new Message(user.id, user.room, "voteDone", null);
+  ws.send(mes.getJson());
+};
 /**
  * sendボタン押下
  * @param {*} event
@@ -34,7 +56,7 @@ let send = (event) => {
     name: document.getElementById("name").value,
   };
   let data = new Message(
-    -1,
+    user.id,
     document.getElementById("room").value,
     `message`,
     body
@@ -64,6 +86,15 @@ let join = (event) => {
 let joinBtn = document.getElementById("joinBtn");
 joinBtn.addEventListener("click", join, false);
 
+let vote = (event) => {
+  console.log(user.isHost);
+  if (user.isHost) {
+    let mes = new Message(user.id, user.room, "voteReq", null);
+    ws.send(JSON.stringify(mes));
+  }
+};
+let voteBtn = document.getElementById("voteBtn");
+voteBtn.addEventListener("click", vote, false);
 /**
  * ユニークキーの作成
  * https://qiita.com/coa00/items/679b0b5c7c468698d53f
@@ -92,3 +123,9 @@ storageEv.addEventListener(
   },
   false
 );
+
+let scroll = () => {
+  let obj = document.getElementById("messages");
+  obj.scrollTop = obj.scrollHeight;
+  console.log(obj.scrollHeight);
+};
